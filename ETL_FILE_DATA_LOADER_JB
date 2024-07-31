@@ -1,0 +1,125 @@
+
+{
+    "name": "FILE_DATA_LOADER_JB",
+    "properties": {
+        "activities": [
+            {
+                "name": "cp_FILE_TO_DB",
+                "type": "Copy",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "DelimitedTextSource",
+                        "additionalColumns": [
+                            {
+                                "name": "INGESTION_TIMESTAMP_UTC",
+                                "value": {
+                                    "value": "@formatDateTime(pipeline().TriggerTime, 'yyyy-MM-dd hh:mm:ss')",
+                                    "type": "Expression"
+                                }
+                            }
+                        ],
+                        "storeSettings": {
+                            "type": "AzureBlobStorageReadSettings",
+                            "recursive": true,
+                            "enablePartitionDiscovery": false
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextReadSettings"
+                        }
+                    },
+                    "sink": {
+                        "type": "AzureSqlSink",
+                        "writeBehavior": "insert",
+                        "sqlWriterUseTableLock": false,
+                        "tableOption": "autoCreate",
+                        "disableMetricsCollection": false
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "dataset_coreStorage_csv",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "CONTAINER": {
+                                "value": "@pipeline().parameters.CONTAINER",
+                                "type": "Expression"
+                            },
+                            "FOLDER": {
+                                "value": "@pipeline().parameters.FOLDER",
+                                "type": "Expression"
+                            },
+                            "FILE": {
+                                "value": "@pipeline().parameters.FILE_NAME",
+                                "type": "Expression"
+                            },
+                            "HEADER_ROW": true,
+                            "DELIMITER": ","
+                        }
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "dataHub",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "SCHEMA_NAME": {
+                                "value": "@pipeline().parameters.TARGET_SCHEMA",
+                                "type": "Expression"
+                            },
+                            "OBJECT_NAME": {
+                                "value": "@pipeline().parameters.TARGET_OBJECT",
+                                "type": "Expression"
+                            },
+                            "USER_NAME": "databot",
+                            "USER_PASSWORD_SECRET": "databot"
+                        }
+                    }
+                ]
+            }
+        ],
+        "parameters": {
+            "CONTAINER": {
+                "type": "string",
+                "defaultValue": "asset-management"
+            },
+            "FOLDER": {
+                "type": "string",
+                "defaultValue": "data-files"
+            },
+            "FILE_NAME": {
+                "type": "string",
+                "defaultValue": "Customer.csv"
+            },
+            "TARGET_SCHEMA": {
+                "type": "string",
+                "defaultValue": "LOADTEMP"
+            },
+            "TARGET_OBJECT": {
+                "type": "string",
+                "defaultValue": "CUSTOMER"
+            }
+        },
+        "folder": {
+            "name": "DATA_LOAD"
+        },
+        "annotations": []
+    }
+}
